@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>QuickZ | Admin Panel</title>
+    
+    <!-- Dependencies -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&family=Outfit:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
+
+    <style>
+        body { font-family: 'Hind Siliguri', sans-serif; background: #f8fafc; }
+        .hidden { display: none !important; }
+        .loader { border: 3px solid #f3f3f3; border-top: 3px solid #4f46e5; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        /* Dark Mode */
+        .dark body { background: #0a0a0a; color: #f0f0f0; }
+        .dark .bg-white { background: #111111; }
+        .dark .text-slate-800 { color: #f0f0f0; }
+        .dark .text-slate-600 { color: #b0b0b0; }
+        .dark .text-slate-400 { color: #888888; }
+        .dark .text-slate-500 { color: #a0a0a0; }
+        .dark .bg-slate-50 { background: #111111; }
+        .dark .border { border-color: #333333; }
+        .dark .bg-slate-100 { background: #222222; }
+        .dark .bg-slate-200 { background: #333333; }
+        .dark .bg-slate-800 { background: #0a0a0a; }
+        .dark .bg-slate-900 { background: #050505; }
+        .dark .text-slate-300 { color: #d0d0d0; }
+        .dark .bg-indigo-50 { background: #1a1a2e; }
+        .dark .bg-emerald-50 { background: #0a2a1a; }
+        .dark .bg-red-50 { background: #2a0a0a; }
+        .dark .bg-amber-50 { background: #2a200a; }
+        
+        /* Login Animation */
+        .login-btn {
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .login-btn .btn-text {
+            display: inline-block;
+            transition: transform 0.3s;
+        }
+        
+        .login-btn.loading .btn-text {
+            transform: translateY(30px);
+        }
+        
+        .login-btn .loader-container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            transition: transform 0.3s;
+        }
+        
+        .login-btn.loading .loader-container {
+            transform: translate(-50%, -50%) scale(1);
+        }
+        
+        /* Hamburger Menu Styles */
+        .hamburger-menu {
+            position: relative;
+        }
+        
+        .hamburger-btn {
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            font-size: 24px;
+            color: #64748b;
+            padding: 8px;
+        }
+        
+        .hamburger-btn:hover {
+            color: #4f46e5;
+        }
+        
+        .hamburger-dropdown {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            z-index: 1000;
+            min-width: 180px;
+            display: none;
+        }
+        
+        .hamburger-dropdown.show {
+            display: block;
+        }
+        
+        .hamburger-item {
+            padding: 12px 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+            transition: all 0.2s;
+            border-bottom: 1px solid #f1f5f9;
+        }
+        
+        .hamburger-item:last-child {
+            border-bottom: none;
+        }
+        
+        .hamburger-item:hover {
+            background: #f8fafc;
+        }
+        
+        .hamburger-item.dark-mode {
+            color: #f59e0b;
+        }
+        
+        .hamburger-item.settings {
+            color: #64748b;
+        }
+        
+        .hamburger-item.logout {
+            color: #ef4444;
+        }
+        
+        .dark .hamburger-dropdown {
+            background: #111111;
+            border-color: #333333;
+        }
+        
+        .dark .hamburger-item {
+            border-bottom-color: #333333;
+        }
+        
+        .dark .hamburger-item:hover {
+            background: #222222;
+        }
+        
+        /* Teacher List Styles */
+        .teacher-list-container {
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        
+        .teacher-list-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        
+        .dark .teacher-list-item {
+            border-bottom-color: #333333;
+        }
+        
+        .teacher-actions {
+            display: flex;
+            gap: 8px;
+        }
+        
+        @media (max-width: 768px) {
+            .hamburger-dropdown {
+                min-width: 160px;
+                right: -10px;
+            }
+        }
+    </style>
+    
+    <!-- Tailwind Dark Mode Config -->
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        'en': ['Outfit', 'sans-serif'],
+                        'bn': ['Hind Siliguri', 'sans-serif']
+                    },
+                    colors: {
+                        dark: {
+                            primary: '#0a0a0a',
+                            secondary: '#111111',
+                            tertiary: '#222222'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="text-slate-800 h-screen flex flex-col overflow-hidden bg-slate-50 dark:bg-black">
+
+    <!-- Auth Screen -->
+    <div id="auth-screen" class="fixed inset-0 z-50 bg-white dark:bg-black flex flex-col items-center justify-center p-6">
+        <div class="w-20 h-20 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl flex items-center justify-center text-white text-3xl mb-4 shadow-xl">
+            <i class="fas fa-bolt"></i>
+        </div>
+        <h1 class="text-3xl font-bold text-slate-800 dark:text-white mb-2 font-en">Quick<span class="text-indigo-600">Z</span></h1>
+        <p class="text-sm text-slate-500 dark:text-slate-400 mb-6">Shadow team দ্বারা পরিচালিত</p>
+        
+        <!-- Admin Login Form -->
+        <div class="w-full max-w-sm space-y-3">
+            <input type="text" id="a-user" class="w-full p-4 bg-slate-50 dark:bg-dark-secondary border border-slate-200 dark:border-dark-tertiary rounded-xl outline-none dark:text-white" placeholder="Admin Username">
+            <div class="relative">
+                <input type="password" id="a-pass" class="w-full p-4 bg-slate-50 dark:bg-dark-secondary border border-slate-200 dark:border-dark-tertiary rounded-xl outline-none dark:text-white" placeholder="Admin Password">
+                <i class="fas fa-eye absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 cursor-pointer p-2" onclick="AuthUI.togglePass('a-pass', this)"></i>
+            </div>
+            <button onclick="Auth.adminLogin()" id="admin-login-btn" class="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-4 rounded-xl font-bold shadow-lg login-btn">
+                <span class="btn-text">Admin Access</span>
+                <div class="loader-container">
+                    <div class="loader" style="width: 20px; height: 20px; border-width: 2px;"></div>
+                </div>
+            </button>
+        </div>
+    </div>
+
+    <!-- App Container -->
+    <main id="app-container" class="flex-1 overflow-y-auto hidden pb-24 dark:bg-black"></main>
+
+    <!-- Admin Nav -->
+    <nav id="admin-nav" class="fixed bottom-0 w-full bg-white dark:bg-dark-secondary border-t dark:border-dark-tertiary h-16 flex justify-around items-center z-40 hidden shadow-[0_-5px_15px_rgba(0,0,0,0.05)]">
+        <button onclick="Router.admin('dashboard')" class="nav-item text-indigo-600 dark:text-indigo-400 flex flex-col items-center"><i class="fas fa-home text-xl"></i><span class="text-[10px] font-bold">Home</span></button>
+        <button onclick="Router.admin('teachers')" class="nav-item text-slate-400 flex flex-col items-center"><i class="fas fa-chalkboard-teacher text-xl"></i><span class="text-[10px] font-bold">Teachers</span></button>
+        <button onclick="Router.admin('create-teacher')" class="nav-item text-slate-400 flex flex-col items-center"><i class="fas fa-user-plus text-xl"></i><span class="text-[10px] font-bold">Add Teacher</span></button>
+    </nav>
+
+    <!-- Admin Header -->
+    <div id="admin-header" class="fixed top-0 w-full bg-white/95 dark:bg-dark-secondary/95 backdrop-blur border-b dark:border-dark-tertiary h-14 flex justify-between items-center px-4 z-40 hidden">
+        <div class="font-bold font-en text-slate-800 dark:text-white">Admin<span class="text-indigo-600">Panel</span></div>
+        <div class="flex gap-2">
+            <div class="hamburger-menu">
+                <button class="hamburger-btn" onclick="AdminPanel.toggleHamburgerMenu(event)">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <div class="hamburger-dropdown dark:bg-dark-secondary dark:border-dark-tertiary" id="hamburger-menu-admin">
+                    <div class="hamburger-item dark-mode" onclick="toggleDarkMode(); AdminPanel.toggleHamburgerMenu()">
+                        <i class="fas fa-moon"></i>
+                        <span>Dark Mode</span>
+                    </div>
+                    <div class="hamburger-item settings" onclick="AdminPanel.changePassword(); AdminPanel.toggleHamburgerMenu()">
+                        <i class="fas fa-cog"></i>
+                        <span>Change Password</span>
+                    </div>
+                    <div class="hamburger-item logout" onclick="Auth.confirmLogout(); AdminPanel.toggleHamburgerMenu()">
+                        <i class="fas fa-power-off"></i>
+                        <span>Logout</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- LOGIC -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+        import { getFirestore, collection, addDoc, getDocs, doc, getDoc, setDoc, updateDoc, deleteDoc, query, where, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyB4A6r2JlK_P-29fmC8LSi8gz-HjzFA4CQ",
+            authDomain: "exam-611e5.firebaseapp.com",
+            projectId: "exam-611e5",
+            storageBucket: "exam-611e5.firebasestorage.app",
+            messagingSenderId: "887013693688",
+            appId: "1:887013693688:web:35cedd5b463bf642fa030d"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        const MASTER_USER = "tamim2213";
+        const MASTER_PASS = "tamimhossenemon2213##";
+
+        // Global State & Cache
+        window.AppState = { 
+            role: null, // 'admin'
+            darkMode: false,
+            currentUser: null
+        };
+        window.unsubscribes = [];
+
+        // Initialize dark mode from localStorage
+        if (localStorage.getItem('darkMode') === 'true') {
+            document.documentElement.classList.add('dark');
+            window.AppState.darkMode = true;
+        }
+
+        const clearListeners = () => { window.unsubscribes.forEach(u => u()); window.unsubscribes = []; };
+
+        // Dark Mode Toggle
+        window.toggleDarkMode = function() {
+            window.AppState.darkMode = !window.AppState.darkMode;
+            if (window.AppState.darkMode) {
+                document.documentElement.classList.add('dark');
+                localStorage.setItem('darkMode', 'true');
+            } else {
+                document.documentElement.classList.remove('dark');
+                localStorage.setItem('darkMode', 'false');
+            }
+        };
+
+        // --- AUTH UI ---
+        window.AuthUI = {
+            togglePass: (id, el) => {
+                const i = document.getElementById(id);
+                if(i.type === 'password') { i.type = 'text'; el.classList.remove('fa-eye'); el.classList.add('fa-eye-slash'); }
+                else { i.type = 'password'; el.classList.remove('fa-eye-slash'); el.classList.add('fa-eye'); }
+            },
+            
+            showLoginLoading: (btnId) => {
+                const btn = document.getElementById(btnId);
+                if (btn) {
+                    btn.classList.add('loading');
+                    btn.disabled = true;
+                }
+            },
+            
+            hideLoginLoading: (btnId) => {
+                const btn = document.getElementById(btnId);
+                if (btn) {
+                    btn.classList.remove('loading');
+                    btn.disabled = false;
+                }
+            }
+        };
+
+        // --- AUTHENTICATION ---
+        window.Auth = {
+            adminLogin: async () => {
+                AuthUI.showLoginLoading('admin-login-btn');
+                const u = document.getElementById('a-user').value.trim();
+                const p = document.getElementById('a-pass').value.trim();
+                if (u === MASTER_USER && p === MASTER_PASS) { 
+                    AuthUI.hideLoginLoading('admin-login-btn');
+                    AppState.role = 'admin';
+                    Auth.finalizeAdmin(); 
+                    return; 
+                }
+                try {
+                    const snap = await getDoc(doc(db, "settings", "admin_creds"));
+                    if (snap.exists() && snap.data().username === u && snap.data().password === p) {
+                        AuthUI.hideLoginLoading('admin-login-btn');
+                        AppState.role = 'admin';
+                        Auth.finalizeAdmin();
+                    }
+                    else {
+                        AuthUI.hideLoginLoading('admin-login-btn');
+                        Swal.fire('Error', 'Invalid Credentials', 'error');
+                    }
+                } catch(e) { 
+                    AuthUI.hideLoginLoading('admin-login-btn');
+                    Swal.fire('Error', 'Connection Error', 'error'); 
+                }
+            },
+            
+            finalizeAdmin: () => { 
+                localStorage.setItem('admin_sess','true'); 
+                Router.initAdmin(); 
+            },
+            
+            confirmLogout: () => { 
+                Swal.fire({ 
+                    title: 'Logout?', 
+                    icon: 'warning', 
+                    showCancelButton: true, 
+                    confirmButtonText: 'Yes', 
+                    confirmButtonColor: '#ef4444' 
+                }).then((r)=>{if(r.isConfirmed) Auth.logout()}) 
+            },
+            
+            logout: async () => { 
+                clearListeners(); 
+                localStorage.removeItem('admin_sess');
+                AppState.role = null;
+                AppState.currentUser = null;
+                location.reload();
+            }
+        };
+
+        // --- ROUTER ---
+        window.Router = {
+            initAdmin: () => {
+                document.getElementById('auth-screen').classList.add('hidden');
+                document.getElementById('app-container').classList.remove('hidden');
+                document.getElementById('app-container').classList.add('pt-16');
+                document.getElementById('admin-nav').classList.remove('hidden');
+                document.getElementById('admin-nav').classList.add('flex');
+                document.getElementById('admin-header').classList.remove('hidden');
+                document.getElementById('admin-header').classList.add('flex');
+                AdminPanel.dashboardView();
+            },
+            
+            admin: (p) => {
+                clearListeners();
+                document.querySelectorAll('#admin-nav .nav-item').forEach(el => el.classList.remove('text-indigo-600', 'active'));
+                const btn = document.querySelector(`button[onclick="Router.admin('${p}')"]`);
+                if (btn) btn.classList.add('text-indigo-600', 'active');
+                
+                if(p==='dashboard') AdminPanel.dashboardView();
+                if(p==='teachers') AdminPanel.teachersView();
+                if(p==='create-teacher') AdminPanel.createTeacherView();
+            }
+        };
+
+        // --- ADMIN PANEL ---
+        window.AdminPanel = {
+            toggleHamburgerMenu: function(event) {
+                if (event) {
+                    event.stopPropagation();
+                }
+                const menu = document.getElementById('hamburger-menu-admin');
+                if (menu) {
+                    menu.classList.toggle('show');
+                }
+            },
+            
+            dashboardView: () => {
+                document.getElementById('app-container').innerHTML = `
+                <div class="p-5">
+                    <h2 class="text-xl font-bold mb-6 font-en text-slate-800 dark:text-white">Admin Dashboard</h2>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                        <div class="bg-white dark:bg-dark-secondary p-5 rounded-2xl shadow-sm border dark:border-dark-tertiary">
+                            <div class="text-sm font-bold text-slate-500 dark:text-slate-400 mb-2">Total Teachers</div>
+                            <div class="text-2xl font-bold text-slate-800 dark:text-white" id="total-teachers">0</div>
+                        </div>
+                        <div class="bg-white dark:bg-dark-secondary p-5 rounded-2xl shadow-sm border dark:border-dark-tertiary">
+                            <div class="text-sm font-bold text-slate-500 dark:text-slate-400 mb-2">Active Teachers</div>
+                            <div class="text-2xl font-bold text-emerald-600 dark:text-emerald-400" id="active-teachers">0</div>
+                        </div>
+                        <div class="bg-white dark:bg-dark-secondary p-5 rounded-2xl shadow-sm border dark:border-dark-tertiary">
+                            <div class="text-sm font-bold text-slate-500 dark:text-slate-400 mb-2">Disabled Teachers</div>
+                            <div class="text-2xl font-bold text-amber-600 dark:text-amber-400" id="disabled-teachers">0</div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-white dark:bg-dark-secondary p-5 rounded-2xl shadow-sm border dark:border-dark-tertiary">
+                        <h3 class="font-bold text-lg mb-4 dark:text-white">Recent Teachers</h3>
+                        <div id="recent-teachers-list" class="space-y-3">
+                            <div class="text-center p-4 text-slate-400">Loading...</div>
+                        </div>
+                    </div>
+                </div>`;
+                
+                AdminPanel.loadDashboardStats();
+            },
+            
+            loadDashboardStats: async () => {
+                try {
+                    // Load teachers
+                    const teachersQuery = query(collection(db, "teachers"), orderBy("createdAt", "desc"));
+                    const teachersSnap = await getDocs(teachersQuery);
+                    
+                    const teachers = [];
+                    teachersSnap.forEach(doc => {
+                        teachers.push({ id: doc.id, ...doc.data() });
+                    });
+                    
+                    // Update stats
+                    document.getElementById('total-teachers').textContent = teachers.length;
+                    document.getElementById('active-teachers').textContent = teachers.filter(t => !t.disabled).length;
+                    document.getElementById('disabled-teachers').textContent = teachers.filter(t => t.disabled).length;
+                    
+                    // Show recent teachers
+                    const recentTeachers = teachers.slice(0, 5);
+                    const recentTeachersHTML = recentTeachers.map(teacher => `
+                        <div class="teacher-list-item">
+                            <div>
+                                <div class="font-bold text-sm dark:text-white">${teacher.fullName || teacher.email}</div>
+                                <div class="text-xs text-slate-500 dark:text-slate-400">${teacher.email}</div>
+                                <div class="text-xs font-mono bg-slate-100 dark:bg-dark-tertiary text-slate-600 dark:text-slate-400 px-2 py-1 rounded inline-block mt-1">
+                                    ${teacher.teacherCode || 'No code'}
+                                </div>
+                            </div>
+                            <div>
+                                ${teacher.disabled ? 
+                                    '<span class="text-xs bg-amber-100 dark:bg-amber-900 text-amber-800 dark:text-amber-300 px-2 py-1 rounded">Disabled</span>' : 
+                                    '<span class="text-xs bg-emerald-100 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-300 px-2 py-1 rounded">Active</span>'
+                                }
+                            </div>
+                        </div>
+                    `).join('');
+                    
+                    document.getElementById('recent-teachers-list').innerHTML = recentTeachersHTML || '<div class="text-center p-4 text-slate-400">No teachers found</div>';
+                    
+                } catch (error) {
+                    console.error('Error loading dashboard stats:', error);
+                }
+            },
+            
+            teachersView: () => {
+                document.getElementById('app-container').innerHTML = `
+                <div class="p-5">
+                    <h2 class="text-xl font-bold mb-6 font-en text-slate-800 dark:text-white">Teacher Management</h2>
+                    
+                    <div class="flex gap-3 mb-6">
+                        <input type="text" id="teacher-search" class="flex-1 p-3 border dark:border-dark-tertiary dark:bg-black dark:text-white rounded-xl" placeholder="Search by name, email, phone or teacher code...">
+                        <select id="teacher-filter" class="p-3 border dark:border-dark-tertiary dark:bg-black dark:text-white rounded-xl" onchange="AdminPanel.filterTeachers()">
+                            <option value="all">All Teachers</option>
+                            <option value="disabled">Disabled Only</option>
+                        </select>
+                    </div>
+                    
+                    <div class="bg-white dark:bg-dark-secondary rounded-2xl shadow-sm border dark:border-dark-tertiary overflow-hidden">
+                        <div class="p-4 border-b dark:border-dark-tertiary flex justify-between items-center">
+                            <div class="font-bold text-sm dark:text-white">All Teachers</div>
+                        </div>
+                        <div class="teacher-list-container" id="teachers-list">
+                            <div class="text-center p-4 text-slate-400">Loading teachers...</div>
+                        </div>
+                    </div>
+                </div>`;
+                
+                AdminPanel.loadTeachersList();
+                
+                // Add search functionality
+                document.getElementById('teacher-search').addEventListener('keyup', function() {
+                    AdminPanel.filterTeachers();
+                });
+            },
+            
+            loadTeachersList: async () => {
+                try {
+                    const teachersQuery = query(collection(db, "teachers"), orderBy("createdAt", "desc"));
+                    const teachersSnap = await getDocs(teachersQuery);
+                    
+                    const teachers = [];
+                    teachersSnap.forEach(doc => {
+                        teachers.push({ id: doc.id, ...doc.data() });
+                    });
+                    
+                    window.allTeachers = teachers; // Store for filtering
+                    
+                    AdminPanel.renderTeachersList(teachers);
+                } catch (error) {
+                    console.error('Error loading teachers:', error);
+                    document.getElementById('teachers-list').innerHTML = '<div class="text-center p-4 text-red-500">Error loading teachers</div>';
+                }
+            },
+            
+            renderTeachersList: (teachers) => {
+                if (teachers.length === 0) {
+                    document.getElementById('teachers-list').innerHTML = '<div class="text-center p-4 text-slate-400">No teachers found</div>';
+                    return;
+                }
+                
+                const html = teachers.map(teacher => `
+                    <div class="teacher-list-item">
+                        <div class="flex-1">
+                            <div class="font-bold text-sm dark:text-white">${teacher.fullName || 'Not set'}</div>
+                            <div class="text-xs text-slate-500 dark:text-slate-400">${teacher.email}</div>
+                            <div class="flex gap-2 mt-1">
+                                <div class="text-xs font-mono bg-slate-100 dark:bg-dark-tertiary text-slate-600 dark:text-slate-400 px-2 py-1 rounded">
+                                    ${teacher.teacherCode || 'No code'}
+                                </div>
+                                <div class="text-xs text-slate-500 dark:text-slate-400">
+                                    <i class="fas fa-phone mr-1"></i>${teacher.phone || 'Not set'}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="teacher-actions">
+                            <button onclick="AdminPanel.viewTeacherPassword('${teacher.id}', '${teacher.email}')" class="text-xs bg-slate-100 dark:bg-dark-tertiary text-slate-600 dark:text-slate-400 px-3 py-1.5 rounded-lg">
+                                <i class="fas fa-key"></i>
+                            </button>
+                            ${teacher.disabled ? 
+                                `<button onclick="AdminPanel.toggleTeacherStatus('${teacher.id}', false)" class="text-xs bg-emerald-100 dark:bg-emerald-900 text-emerald-600 dark:text-emerald-300 px-3 py-1.5 rounded-lg">
+                                    Enable
+                                </button>` :
+                                `<button onclick="AdminPanel.toggleTeacherStatus('${teacher.id}', true)" class="text-xs bg-amber-100 dark:bg-amber-900 text-amber-600 dark:text-amber-300 px-3 py-1.5 rounded-lg">
+                                    Disable
+                                </button>`
+                            }
+                            <button onclick="AdminPanel.deleteTeacher('${teacher.id}')" class="text-xs bg-red-100 dark:bg-red-900 text-red-600 dark:text-red-300 px-3 py-1.5 rounded-lg">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+                
+                document.getElementById('teachers-list').innerHTML = html;
+            },
+            
+            filterTeachers: () => {
+                if (!window.allTeachers) return;
+                
+                const searchTerm = document.getElementById('teacher-search').value.toLowerCase();
+                const filterType = document.getElementById('teacher-filter').value;
+                const term = searchTerm;
+                
+                const filtered = window.allTeachers.filter(teacher => {
+                    // Apply status filter
+                    if (filterType === 'disabled' && !teacher.disabled) return false;
+                    
+                    // Apply search filter
+                    if (term) {
+                        return (
+                            (teacher.fullName && teacher.fullName.toLowerCase().includes(term)) ||
+                            teacher.email.toLowerCase().includes(term) ||
+                            (teacher.phone && teacher.phone.includes(term)) ||
+                            (teacher.teacherCode && teacher.teacherCode.toLowerCase().includes(term))
+                        );
+                    }
+                    return true;
+                });
+                
+                AdminPanel.renderTeachersList(filtered);
+            },
+            
+            viewTeacherPassword: async (teacherId, teacherEmail) => {
+                try {
+                    const teacherDoc = await getDoc(doc(db, "teachers", teacherId));
+                    if (teacherDoc.exists()) {
+                        const teacherData = teacherDoc.data();
+                        Swal.fire({
+                            title: 'Teacher Password',
+                            html: `
+                                <div class="text-left">
+                                    <p class="mb-2"><strong>Email:</strong> ${teacherEmail}</p>
+                                    <p><strong>Password:</strong> <code class="bg-slate-100 dark:bg-dark-tertiary p-1 rounded">${teacherData.password}</code></p>
+                                </div>
+                            `,
+                            icon: 'info',
+                            confirmButtonText: 'OK'
+                        });
+                    }
+                } catch (error) {
+                    Swal.fire('Error', 'Failed to load password', 'error');
+                }
+            },
+            
+            toggleTeacherStatus: async (teacherId, disable) => {
+                const action = disable ? 'disable' : 'enable';
+                const result = await Swal.fire({
+                    title: `${disable ? 'Disable' : 'Enable'} Teacher?`,
+                    text: disable ? 
+                        "Teacher will be logged out and cannot access their panel until enabled again." :
+                        "Teacher will be able to access their panel again.",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: `Yes, ${action}`,
+                    confirmButtonColor: disable ? '#f59e0b' : '#10b981'
+                });
+                
+                if (result.isConfirmed) {
+                    try {
+                        await updateDoc(doc(db, "teachers", teacherId), {
+                            disabled: disable,
+                            updatedAt: new Date()
+                        });
+                        
+                        Swal.fire('Success', `Teacher ${action}d successfully`, 'success');
+                        AdminPanel.loadTeachersList();
+                    } catch (error) {
+                        Swal.fire('Error', `Failed to ${action} teacher`, 'error');
+                    }
+                }
+            },
+            
+            deleteTeacher: async (teacherId) => {
+                const result = await Swal.fire({
+                    title: 'Delete Teacher?',
+                    text: "This action cannot be undone. All data associated with this teacher will be deleted.",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    confirmButtonText: 'Yes, delete'
+                });
+                
+                if (result.isConfirmed) {
+                    try {
+                        // Delete teacher's groups first
+                        const groupsQuery = query(collection(db, "groups"), where("teacherId", "==", teacherId));
+                        const groupsSnap = await getDocs(groupsQuery);
+                        
+                        const deletePromises = [];
+                        groupsSnap.forEach(groupDoc => {
+                            deletePromises.push(deleteDoc(doc(db, "groups", groupDoc.id)));
+                        });
+                        
+                        // Delete teacher
+                        deletePromises.push(deleteDoc(doc(db, "teachers", teacherId)));
+                        
+                        await Promise.all(deletePromises);
+                        
+                        Swal.fire('Deleted!', 'Teacher has been deleted.', 'success');
+                        AdminPanel.loadTeachersList();
+                    } catch (error) {
+                        Swal.fire('Error', 'Failed to delete teacher: ' + error.message, 'error');
+                    }
+                }
+            },
+            
+            createTeacherView: () => {
+                document.getElementById('app-container').innerHTML = `
+                <div class="p-5 max-w-md mx-auto">
+                    <h2 class="text-xl font-bold mb-6 font-en text-slate-800 dark:text-white">Add New Teacher</h2>
+                    
+                    <div class="bg-white dark:bg-dark-secondary p-5 rounded-2xl shadow-sm border dark:border-dark-tertiary space-y-4">
+                        <div>
+                            <label class="block text-sm font-bold mb-1 dark:text-white">Teacher Email</label>
+                            <input type="email" id="new-teacher-email" class="w-full p-3 border dark:border-dark-tertiary dark:bg-black dark:text-white rounded-xl" placeholder="teacher@example.com" required>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-bold mb-1 dark:text-white">Password</label>
+                            <div class="relative">
+                                <input type="text" id="new-teacher-password" class="w-full p-3 border dark:border-dark-tertiary dark:bg-black dark:text-white rounded-xl" placeholder="Set a password" required>
+                                <button onclick="AdminPanel.generatePassword()" class="absolute right-3 top-1/2 -translate-y-1/2 text-xs bg-slate-100 dark:bg-dark-tertiary text-slate-600 dark:text-slate-400 px-2 py-1 rounded">
+                                    Generate
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-sm font-bold mb-1 dark:text-white">Full Name (Optional)</label>
+                                <input type="text" id="new-teacher-name" class="w-full p-3 border dark:border-dark-tertiary dark:bg-black dark:text-white rounded-xl" placeholder="Optional">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-bold mb-1 dark:text-white">Phone (Optional)</label>
+                                <input type="tel" id="new-teacher-phone" class="w-full p-3 border dark:border-dark-tertiary dark:bg-black dark:text-white rounded-xl" placeholder="Optional">
+                            </div>
+                        </div>
+                        
+                        <button onclick="AdminPanel.createNewTeacher()" class="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-4 rounded-xl font-bold shadow-lg">
+                            Create Teacher Account
+                        </button>
+                    </div>
+                </div>`;
+            },
+            
+            generatePassword: () => {
+                const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+                let password = '';
+                for (let i = 0; i < 8; i++) {
+                    password += chars.charAt(Math.floor(Math.random() * chars.length));
+                }
+                document.getElementById('new-teacher-password').value = password;
+            },
+            
+            createNewTeacher: async () => {
+                const email = document.getElementById('new-teacher-email').value.trim();
+                const password = document.getElementById('new-teacher-password').value.trim();
+                const fullName = document.getElementById('new-teacher-name').value.trim();
+                const phone = document.getElementById('new-teacher-phone').value.trim();
+                
+                if (!email || !password) {
+                    Swal.fire('Error', 'Email and password are required', 'error');
+                    return;
+                }
+                
+                // Check if email already exists
+                try {
+                    const teachersQuery = query(collection(db, "teachers"), where("email", "==", email));
+                    const querySnapshot = await getDocs(teachersQuery);
+                    
+                    if (!querySnapshot.empty) {
+                        Swal.fire('Error', 'Teacher with this email already exists', 'error');
+                        return;
+                    }
+                    
+                    // Generate teacher code
+                    const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+                    const numbers = '0123456789';
+                    let teacherCode = '';
+                    
+                    // Generate 5 random capital letters
+                    for (let i = 0; i < 5; i++) {
+                        teacherCode += letters.charAt(Math.floor(Math.random() * letters.length));
+                    }
+                    
+                    teacherCode += '-';
+                    
+                    // Generate 5 random numbers
+                    for (let i = 0; i < 5; i++) {
+                        teacherCode += numbers.charAt(Math.floor(Math.random() * numbers.length));
+                    }
+                    
+                    // Create teacher
+                    const teacherData = {
+                        email: email,
+                        password: password,
+                        fullName: fullName || null,
+                        phone: phone || null,
+                        teacherCode: teacherCode,
+                        disabled: false,
+                        profileCompleted: !!(fullName && phone),
+                        createdAt: new Date(),
+                        updatedAt: new Date()
+                    };
+                    
+                    await addDoc(collection(db, "teachers"), teacherData);
+                    
+                    Swal.fire('Success', 'Teacher account created successfully!', 'success').then(() => {
+                        Router.admin('teachers');
+                    });
+                    
+                } catch (error) {
+                    Swal.fire('Error', 'Failed to create teacher: ' + error.message, 'error');
+                }
+            },
+            
+            changePassword: async function() {
+                const { value: formValues } = await Swal.fire({
+                    title: 'Change Admin Password',
+                    html:
+                        '<input id="swal-old" class="swal2-input" placeholder="Old Password" type="password">' +
+                        '<input id="swal-new" class="swal2-input" placeholder="New Password" type="password">' +
+                        '<input id="swal-conf" class="swal2-input" placeholder="Confirm New Password" type="password">',
+                    focusConfirm: false,
+                    showCancelButton: true,
+                    preConfirm: () => {
+                        return [
+                            document.getElementById('swal-old').value,
+                            document.getElementById('swal-new').value,
+                            document.getElementById('swal-conf').value
+                        ]
+                    }
+                });
+
+                if (formValues) {
+                    const [oldPass, newPass, confPass] = formValues;
+                    if(!oldPass || !newPass || !confPass) return Swal.fire('Error', 'All fields are required', 'error');
+                    if(newPass !== confPass) return Swal.fire('Error', 'New passwords do not match', 'error');
+
+                    const docRef = doc(db, "settings", "admin_creds");
+                    const snap = await getDoc(docRef);
+                    
+                    if(snap.exists()) {
+                        if(snap.data().password === oldPass) {
+                             await updateDoc(docRef, { password: newPass });
+                             Swal.fire('Success', 'Password Changed', 'success');
+                        } else {
+                             Swal.fire('Error', 'Old Password Incorrect', 'error');
+                        }
+                    } else {
+                        if(oldPass === MASTER_PASS) {
+                             await setDoc(docRef, { username: MASTER_USER, password: newPass });
+                             Swal.fire('Success', 'Password updated in Database', 'success');
+                        } else {
+                             Swal.fire('Error', 'Old Password Incorrect', 'error');
+                        }
+                    }
+                }
+            }
+        };
+
+        // Fix hamburger menu issue
+        document.addEventListener('click', function(e) {
+            // Hamburger menu toggle for admin
+            if (e.target.closest('.hamburger-btn') && e.target.closest('#admin-header')) {
+                const menu = document.getElementById('hamburger-menu-admin');
+                if (menu) {
+                    menu.classList.toggle('show');
+                    e.stopPropagation();
+                    return;
+                }
+            }
+            
+            // Close hamburger menu when clicking outside
+            if (!e.target.closest('.hamburger-menu')) {
+                document.getElementById('hamburger-menu-admin').classList.remove('show');
+            }
+        });
+
+        // Init
+        if(localStorage.getItem('admin_sess')) { 
+            AppState.role = 'admin'; 
+            Router.initAdmin(); 
+        } else { 
+            document.getElementById('auth-screen').classList.remove('hidden'); 
+        }
+    </script>
+</body>
+</html>
